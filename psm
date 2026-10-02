@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Connect to CyberArk PSM RemoteApp using the newest .rdp in ~/Downloads.
+# Runs inside its own nested Weston so RemoteApp windows (popups, focus, mouse)
+# get a real X window manager instead of niri's xwayland-satellite.
+# Weston and the session live and die together.
+set -euo pipefail
+command -v clipnotify >/dev/null || { echo "missing clipnotify: nix profile add nixpkgs#clipnotify" >&2; exit 1; }
+f=${1:-$(ls -t ~/Downloads/*.rdp | head -1)}
+get() { grep -a "^$1:" "$f" | cut -d: -f3- | tr -d '\r'; }
+
+weston --xwayland --fullscreen &
+wpid=$!
+trap 'kill $wpid 2>/dev/null' EXIT
+
+d=
+for _ in $(seq 50); do
+  d=$(ss -xlp 2>/dev/null | grep "pid=$wpid," | grep -oE 'X11-unix/X[0-9]+' | head -1 | sed 's|.*/X|:|' || true)
+  [[ -n $d ]] && break; sleep 0.1
+done
+[[ -n $d ]] || { echo "weston X display not found" >&2; exit 1; }
+
+# Weston keeps its own clipboard; bridge text to/from niri's.
+wl-paste -t text --watch xclip -selection clipboard -t text/plain -display "$d" &
+inpid=$!
+( while DISPLAY=$d clipnotify; do
+    cur=$(xclip -o -selection clipboard -display "$d" 2>/dev/null) || continue
+    [[ $cur == "$(wl-paste -n -t text 2>/dev/null)" ]] || printf %s "$cur" | wl-copy
+  done ) &
+outpid=$!
+trap 'kill $wpid $inpid $outpid 2>/dev/null' EXIT
+
+echo "Using $f ($(get remoteapplicationname)) on weston $d"
+DISPLAY=$d SDL_VIDEODRIVER=x11 sdl-freerdp /v:"$(get 'full address')" /u:"$(get username)" /p:'' \
+  /app:program:'||PSMInitSession',name:"$(get remoteapplicationname)" \
+  /sec:rdp /cert:tofu +clipboard -gfx

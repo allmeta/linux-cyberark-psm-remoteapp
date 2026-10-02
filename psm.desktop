@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=CyberArk PSM
+Comment=Open PSM .rdp files via nested Weston + sdl-freerdp
+Exec=kitty --title psm /home/thomal/.local/bin/psm %f
+MimeType=application/x-rdp;application/x-remmina;
+NoDisplay=true
