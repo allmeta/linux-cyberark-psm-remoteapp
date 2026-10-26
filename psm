@@ -8,7 +8,7 @@ command -v clipnotify >/dev/null || { echo "missing clipnotify: nix profile add 
 f=${1:-$(ls -t ~/Downloads/*.rdp | head -1)}
 get() { grep -a "^$1:" "$f" | cut -d: -f3- | tr -d '\r'; }
 
-weston --xwayland --fullscreen &
+weston --xwayland --idle-time=0 &
 wpid=$!
 trap 'kill $wpid 2>/dev/null' EXIT
 
@@ -30,6 +30,6 @@ outpid=$!
 trap 'kill $wpid $inpid $outpid 2>/dev/null' EXIT
 
 echo "Using $f ($(get remoteapplicationname)) on weston $d"
-DISPLAY=$d SDL_VIDEODRIVER=x11 sdl-freerdp /v:"$(get 'full address')" /u:"$(get username)" /p:'' \
+DISPLAY=$d SDL_VIDEODRIVER=x11 ${PSM_CLIENT:-sdl-freerdp} /v:"$(get 'full address')" /u:"$(get username)" /p:'' \
   /app:program:'||PSMInitSession',name:"$(get remoteapplicationname)" \
-  /sec:rdp /cert:tofu +clipboard -gfx
+  /sec:rdp /cert:tofu +clipboard -gfx /drive:Documents,"$HOME/Documents"

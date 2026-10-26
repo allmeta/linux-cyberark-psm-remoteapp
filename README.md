@@ -69,8 +69,13 @@ The token is single-use and expires fast, so every attempt needs a fresh downloa
 DISPLAY=<weston X display> SDL_VIDEODRIVER=x11 sdl-freerdp \
   /v:<host> /u:'localhost\PSM@<guid>' /p:'' \
   /app:program:'||PSMInitSession',name:PSM-<Component> \
-  /sec:rdp /cert:tofu +clipboard -gfx
+  /sec:rdp /cert:tofu +clipboard -gfx /drive:Documents,~/Documents
 ```
+
+`/drive:` shares that one folder with the server. It shows up as
+`\\tsclient\Documents` and as "Documents on <your hostname>" in the remote
+app's file dialogs, if the PSM policy allows drive redirection. FreeRDP marks
+dot-files as hidden on the Windows side.
 
 ## What we learned (in the order we hit it)
 
@@ -139,6 +144,10 @@ DISPLAY=<weston X display> SDL_VIDEODRIVER=x11 sdl-freerdp \
 13. **`set -euo pipefail` gotcha.** A `grep` with no match inside `$(...)`
     exits the script, and the EXIT trap then kills Weston 2 ms after start
     (`caught signal 15`). Hence the `|| true` in the display-detection loop.
+
+14. **Don't start Weston with `--fullscreen` on niri.** With it, windows inside
+    Weston (even `xclock -update 1`) only redraw while the mouse moves. Without
+    it, Weston keeps committing frames to niri on its own.
 
 ## Keyboard
 
