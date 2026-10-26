@@ -27,7 +27,15 @@ window or the terminal ends everything.
 Requirements (nix):
 
 ```sh
-nix profile add nixpkgs#freerdp nixpkgs#weston nixpkgs#clipnotify
+nix profile add nixpkgs#freerdp nixpkgs#weston
+```
+
+clipnotify must be built from [upstream](https://github.com/cdown/clipnotify),
+because nixpkgs ships a 2018 snapshot without `-s`/`-l`:
+
+```sh
+nix-shell -p gcc pkg-config xorg.libX11 xorg.libXfixes --run \
+  'cc -O2 -o ~/.local/bin/clipnotify clipnotify.c $(pkg-config --cflags --libs x11 xfixes)'
 ```
 
 Plus `wl-clipboard`, `xclip`, `ss` (iproute2) and `kitty` for the desktop entry.

@@ -4,7 +4,7 @@
 # get a real X window manager instead of niri's xwayland-satellite.
 # Weston and the session live and die together.
 set -euo pipefail
-command -v clipnotify >/dev/null || { echo "missing clipnotify: nix profile add nixpkgs#clipnotify" >&2; exit 1; }
+timeout 1 clipnotify -h 2>&1 | grep -q -- -l || { echo "need clipnotify with -l (newer than nixpkgs): build github.com/cdown/clipnotify" >&2; exit 1; }
 f=${1:-$(ls -t ~/Downloads/*.rdp | head -1)}
 get() { grep -a "^$1:" "$f" | cut -d: -f3- | tr -d '\r'; }
 
@@ -22,7 +22,7 @@ done
 # Weston keeps its own clipboard; bridge text to/from niri's.
 wl-paste -t text --watch xclip -selection clipboard -t text/plain -display "$d" &
 inpid=$!
-( while DISPLAY=$d clipnotify; do
+( DISPLAY=$d clipnotify -s clipboard -l | while read -r _; do
     cur=$(xclip -o -selection clipboard -display "$d" 2>/dev/null) || continue
     [[ $cur == "$(wl-paste -n -t text 2>/dev/null)" ]] || printf %s "$cur" | wl-copy
   done ) &
